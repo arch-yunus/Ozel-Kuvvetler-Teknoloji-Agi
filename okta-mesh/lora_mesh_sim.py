@@ -18,16 +18,29 @@ class LoRaMeshSim:
         self.neighbor_nodes = random.sample(potential_neighbors, k=random.randint(1, 3))
         print(f"[{self.node_id}] Komşular keşfedildi: {self.neighbor_nodes}")
 
-    def send_data(self, target, payload):
-        print(f"[{self.node_id}] '{target}' hedefine veri gönderiliyor (Frekans: {self.frequency})...")
-        # Paket kaybı simülasyonu
-        if random.random() > 0.95:
-            print(f"!!! [{self.node_id}] PAKET KAYBI: '{target}' ulaşılamadı.")
+    def send_data(self, target, payload, hop_count=0):
+        if hop_count > 5:
+            print(f"!!! [{self.node_id}] HATA: TTL (Maksimum Sıçrama) aşıldı. Paket düşürüldü.")
             return False
+
+        print(f"[{self.node_id}] {hop_count}. sıçrama: '{target}' hedefine veri yönlendiriliyor...")
         
-        time.sleep(0.5) # İletim gecikmesi simülasyonu
-        print(f"[{self.node_id}] İleti başarıyla gönderildi: {payload}")
-        return True
+        # Eğer hedef direkt komşuysa (Simülasyon)
+        if target in self.neighbor_nodes:
+            print(f"  -> [{self.node_id}] Hedef '{target}' direkt kapsama alanında. Veri iletildi.")
+            return True
+        
+        # Değilse, rastgele bir komşu üzerinden zıpla
+        if self.neighbor_nodes:
+            next_hop = random.choice(self.neighbor_nodes)
+            print(f"  -> [{self.node_id}] Hedef direkt görünmüyor. {next_hop} üzerinden zıplanıyor...")
+            # Rekürsif sıçrama simülasyonu
+            time.sleep(0.3)
+            return self.send_data(target, payload, hop_count + 1)
+        
+        print(f"!!! [{self.node_id}] HATA: Yönlendirme yolu bulunamadı.")
+        return False
+
 
 if __name__ == "__main__":
     node = LoRaMeshSim(node_id="OP-01")
